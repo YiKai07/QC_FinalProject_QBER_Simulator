@@ -23,7 +23,7 @@ st.title("量子通訊光害與大氣傳輸 QBER 模擬工具")
 st.sidebar.header("系統情境與參數設定")
 
 # 1. 鏈路情境選擇
-link_scenario = st.sidebar.radio("選擇通訊情境 (Scenario)", ["上行鏈路 (Uplink) - 地面發送/衛星接收", "下行鏈路 (Downlink) - 衛星發送/地面接收"])
+link_scenario = st.sidebar.radio("選擇通訊情境 (Scenario)", ["上行鏈路 Uplink - 地面發送/衛星接收", "下行鏈路 Downlink - 衛星發送/地面接收"])
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("快速套用論文典型站點參數")
@@ -112,27 +112,27 @@ qber_array = (noise_array / (2 * signal_rate + noise_array)) * 100.0 + base_erro
 # 找出連線黃金交叉仰角
 safe_alt_5 = angles[qber_array < 5.0][0] if np.any(qber_array < 5.0) else None
 
-# 繪製高品質科研對比圖表
+# 繪製對比圖表
 fig, ax = plt.subplots(figsize=(9, 3.5))
-ax.plot(angles, qber_array, color='#0f172a', linewidth=3, label=f"模擬鏈路 QBER 曲線")
+ax.plot(angles, qber_array, color='#0f172a', linewidth=3, label=f"Simulated QBER")
 
 # 繪製安全邊界與理論上限
-ax.axhline(y=5.0, color='#10b981', linestyle='--', linewidth=1.5, label="QEYSSat 實務安全極限 (5.0%)")
-ax.axhline(y=11.0, color='#f59e0b', linestyle='-.', linewidth=1.5, label="傳統 BB84 Shor-Preskill 安全上限 (11.0%)")
-ax.axhline(y=12.62, color='#ef4444', linestyle=':', linewidth=1.5, label="論文引入 RFI-QKD 安全上限 (12.62%)")
+ax.axhline(y=5.0, color='#10b981', linestyle='--', linewidth=1.5, label="QEYSSat Practical Limit (5.0%)")
+ax.axhline(y=11.0, color='#f59e0b', linestyle='-.', linewidth=1.5, label="BB84 Theoretical Limit (11.0%)")
+ax.axhline(y=12.62, color='#ef4444', linestyle=':', linewidth=1.5, label="RFI-QKD Theoretical Limit (12.62%)")
 
 # 標註關鍵交叉點
 if "Uplink" in link_scenario and radiance > 30:
     if safe_alt_5:
         ax.axvline(x=safe_alt_5, color='#10b981', linestyle=':', alpha=0.7)
-        ax.text(safe_alt_5 + 1, 6, f"實務解鎖仰角: {safe_alt_5:.1f}°\n(符合城市 >40° 限制)", color='#065f46', fontsize=9)
+        ax.text(safe_alt_5 + 1, 6, f"Secure Threshold: {safe_alt_5:.1f}°", color='#065f46', fontsize=9)
 else:
     if safe_alt_5 and safe_alt_5 <= 10.1:
-        ax.text(12, base_error + 1, "鄉村暗空環境：\n地平線附近 (仰角10°) 即可安全連線", color='#065f46', fontsize=10)
+        ax.text(12, base_error + 1, "Rural Dark Sky:\nSecure link available from 10°", color='#065f46', fontsize=10)
 
-ax.set_title(f"{link_scenario.split(' ')[0]} - 仰角 vs 量子誤碼率 (QBER) 關係圖", fontsize=14, pad=15)
-ax.set_xlabel("衛星仰角 Altitude Angle (度 °)", fontsize=11)
-ax.set_ylabel("量子誤碼率 QBER (%)", fontsize=11)
+ax.set_title(f"{link_scenario.split(' ')[1]} - Elevation Angle vs QBER", fontsize=14, pad=15)
+ax.set_xlabel("Altitude Angle (°)", fontsize=11)
+ax.set_ylabel("QBER (%)", fontsize=11)
 ax.set_xlim(10, 90)
 ax.set_ylim(0, max(16, np.max(qber_array) + 2))
 ax.grid(True, linestyle=':', alpha=0.6)
