@@ -49,8 +49,6 @@ if st.sidebar.button("暗空觀測台 (QGS-RAO)"):
 
 st.sidebar.markdown("---")
 
-# 將滑桿的值直接與 session_state 綁定 (使用 value=st.session_state.[key])
-# 並透過指定 key 讓 Streamlit 自動處理雙向連動
 altitude = st.sidebar.slider("當前衛星仰角 θ (度)", min_value=10.0, max_value=90.0, key="altitude", step=1.0)
 radiance = st.sidebar.slider("地表光害輻射率 (nW/cm²/sr)", min_value=0.0, max_value=120.0, key="radiance", step=0.1)
 signal_rate = st.sidebar.slider("預期訊號光子率 (Hz)", min_value=100, max_value=10000, key="signal_rate", step=100)
@@ -76,7 +74,7 @@ else:
     C_scale = 8.0  
     background_noise = radiance * C_scale * e_atm
 
-# 3. 量子誤碼率 (QBER) 計算模型
+# 3. 量子誤碼率 (QBER) 計算
 base_error = 1.0
 qber = (background_noise / (2 * signal_rate + background_noise)) * 100.0 + base_error
 
