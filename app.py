@@ -66,17 +66,22 @@ csc_theta = 1.0 / np.sin(theta_rad)
 # 1. 大氣透射率模型 e_atm = 10^(-0.32 * csc(θ))
 e_atm = 10 ** (-0.32 * csc_theta)
 
-# 2. 背景雜訊估算 (根據上下行鏈路特性調整物理縮放因子)
+# 2. 修正物理衰減與雜訊計算演算法 (對齊星地 QKD 真實鏈路損耗)
+# 預期訊號穿透大氣層後，受到 e_atm 吸收而衰減
+attenuated_signal = signal_rate * e_atm
+
 if "Uplink" in link_scenario:
-    C_scale = 38.0  
-    background_noise = radiance * C_scale * e_atm * csc_theta
+    C_scale = 0.45  
+    # 雜訊隨著低仰角幾何足跡投影(csc_theta)非線性放大
+    background_noise = radiance * C_scale * csc_theta
 else:
-    C_scale = 8.0  
-    background_noise = radiance * C_scale * e_atm
+    C_scale = 0.12  
+    background_noise = radiance * C_scale
 
 # 3. 量子誤碼率 (QBER) 計算
 base_error = 1.0
-qber = (background_noise / (2 * signal_rate + background_noise)) * 100.0 + base_error
+qber = (background_noise / (2 * attenuated_signal + background_noise)) * 100.0 + base_error
+qber = min(100.0, qber)
 
 # 顯示即時指標
 col1, col2, col3 = st.columns(3)
@@ -94,18 +99,21 @@ else:
 # st.markdown("---")
 st.subheader(f"動態分析：在當前光害 ({radiance} nW/cm²/sr) 下，仰角對 QBER 的影響趨勢")
 
-# --- 產生全仰角角度趨勢圖數據 ---
+# --- 產生全仰角角度趨勢圖數據 (修正演算法以呈現隨角度增加而遞減) ---
 angles = np.linspace(10, 90, 161)
 angles_rad = np.radians(angles)
 csc_angles = 1.0 / np.sin(angles_rad)
 e_atm_array = 10 ** (-0.32 * csc_angles)
 
-if "Uplink" in link_scenario:
-    noise_array = radiance * C_scale * e_atm_array * csc_angles
-else:
-    noise_array = radiance * C_scale * e_atm_array
+attenuated_signal_array = signal_rate * e_atm_array
 
-qber_array = (noise_array / (2 * signal_rate + noise_array)) * 100.0 + base_error
+if "Uplink" in link_scenario:
+    noise_array = radiance * C_scale * csc_angles
+else:
+    noise_array = np.full_like(angles, radiance * C_scale)
+
+qber_array = (noise_array / (2 * attenuated_signal_array + noise_array)) * 100.0 + base_error
+qber_array = np.minimum(100.0, qber_array)
 
 # 找出連線黃金交叉仰角
 safe_alt_5 = angles[qber_array < 5.0][0] if np.any(qber_array < 5.0) else None
@@ -119,7 +127,7 @@ ax.axhline(y=5.0, color='#10b981', linestyle='--', linewidth=1.5, label="QEYSSat
 ax.axhline(y=11.0, color='#f59e0b', linestyle='-.', linewidth=1.5, label="BB84 Theoretical Limit (11.0%)")
 ax.axhline(y=12.62, color='#ef4444', linestyle=':', linewidth=1.5, label="RFI-QKD Theoretical Limit (12.62%)")
 
-# 標註關鍵交叉點
+# 標註交叉點
 if "Uplink" in link_scenario and radiance > 30:
     if safe_alt_5:
         ax.axvline(x=safe_alt_5, color='#10b981', linestyle=':', alpha=0.7)
